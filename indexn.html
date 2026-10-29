@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FRIS – Firmware Risk Intelligence System</title>
+<style>
+:root{--bg:#060a12;--panel:#0c1322;--line:#1b2a44;--tx:#d6e2f5;--mut:#7d90b0;--cy:#22d3ee;--gr:#4ade80;--am:#fbbf24;--rd:#f87171;--mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 system-ui,Segoe UI,Roboto,sans-serif}
+canvas#bg{position:fixed;inset:0;z-index:0;opacity:.35}
+main,header,footer{position:relative;z-index:1}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 5vw;border-bottom:1px solid var(--line);background:#060a12cc;backdrop-filter:blur(8px);position:sticky;top:0;z-index:5}
+.logo{font:700 20px var(--mono);color:var(--cy);letter-spacing:.08em}
+nav a{color:var(--mut);text-decoration:none;margin-left:22px;font-size:14px}nav a:hover{color:var(--cy)}
+.hero{padding:9vh 5vw 6vh;max-width:1100px;margin:auto}
+.hero h1{font:700 clamp(34px,6vw,64px)/1.05 var(--mono);margin:0 0 18px}
+.hero h1 span{color:var(--cy);text-shadow:0 0 24px #22d3ee66}
+.hero p{max-width:640px;color:var(--mut);font-size:18px}
+.btn{background:var(--cy);color:#02131a;border:0;padding:12px 22px;font:600 15px var(--mono);border-radius:6px;cursor:pointer;margin:6px 8px 6px 0;text-decoration:none;display:inline-block}
+.btn:hover{box-shadow:0 0 22px #22d3ee88}.btn.o{background:transparent;color:var(--cy);border:1px solid var(--cy)}
+.btn:disabled{opacity:.4;cursor:not-allowed}.btn:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gr);outline-offset:2px}
+section{max-width:1100px;margin:auto;padding:5vh 5vw}
+h2{font:700 26px var(--mono);margin:0 0 6px}h2::before{content:"> ";color:var(--gr)}
+.sub{color:var(--mut);margin:0 0 22px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}
+.card h3{margin:0 0 6px;font:600 16px var(--mono);color:var(--cy)}.card p{margin:0;color:var(--mut);font-size:14px}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:34px;text-align:center;background:var(--panel);transition:.2s}
+.drop.on{border-color:var(--cy);box-shadow:inset 0 0 30px #22d3ee22}
+.drop input{display:none}.fname{font-family:var(--mono);color:var(--gr);margin-top:8px;word-break:break-all}
+label.chk{color:var(--mut);font-size:14px;display:block;margin-top:12px}
+.term{background:#03070d;border:1px solid var(--line);border-radius:8px;font:13px/1.7 var(--mono);padding:14px;min-height:120px;max-height:240px;overflow:auto;margin-top:16px;color:var(--gr)}
+.term .w{color:var(--am)}.term .e{color:var(--rd)}.term .c{color:var(--cy)}
+.bar{height:4px;background:var(--line);border-radius:2px;margin-top:12px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:var(--cy);transition:width .4s}
+#results{display:none}
+.row{display:grid;gap:16px;grid-template-columns:240px 1fr;align-items:center}
+@media(max-width:700px){.row{grid-template-columns:1fr}nav{display:none}}
+.gauge{width:200px;height:200px;border-radius:50%;margin:auto;display:grid;place-items:center;background:conic-gradient(var(--gc,var(--cy)) calc(var(--v,0)*1%),var(--line) 0);transition:.8s}
+.gauge div{width:156px;height:156px;border-radius:50%;background:var(--bg);display:grid;place-items:center;text-align:center;font:700 40px var(--mono)}
+.gauge small{display:block;font-size:13px;color:var(--mut)}
+.hash{font:12px var(--mono);color:var(--cy);word-break:break-all;background:#03070d;padding:8px 10px;border-radius:6px;border:1px solid var(--line);margin:6px 0 12px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:500}td.m{font-family:var(--mono)}
+.tag{padding:2px 9px;border-radius:99px;font:12px var(--mono);border:1px solid}
+.Low{color:var(--gr)}.Medium{color:var(--am)}.High{color:#fb923c}.Critical{color:var(--rd)}
+.tag.Low,.tag.Medium,.tag.High,.tag.Critical{border-color:currentColor}
+.agent{border-left:3px solid var(--cy)}.agent ul{margin:8px 0 0;padding-left:18px;font-size:14px;color:var(--tx)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{background:var(--panel);border:1px solid var(--line);color:var(--mut);padding:8px 16px;border-radius:6px;font:14px var(--mono);cursor:pointer}
+.tabs button.a{color:var(--cy);border-color:var(--cy)}.pane{display:none}.pane.a{display:block}
+textarea{width:100%;height:200px;background:#03070d;color:var(--tx);border:1px solid var(--line);border-radius:8px;font:12px var(--mono);padding:10px}
+.blk{border:1px solid var(--line);border-left:3px solid var(--gr);background:var(--panel);border-radius:6px;padding:10px 12px;margin-bottom:10px;font:12px var(--mono);word-break:break-all;color:var(--mut)}
+.blk.bad{border-left-color:var(--rd)}.blk b{color:var(--tx)}
+#verdict{font:600 15px var(--mono);margin:10px 0;min-height:24px}
+footer{text-align:center;color:var(--mut);padding:40px 5vw;font-size:13px;border-top:1px solid var(--line)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<header><div class="logo">FRIS//</div><nav><a href="#scan">Scanner</a><a href="#agents">AI agents</a><a href="#ledger">Ledger</a><a href="#about">About</a></nav></header>
+
+<div class="hero">
+  <h1>Know what's inside your <span>firmware</span> before attackers do.</h1>
+  <p>FRIS unpacks a firmware file, finds its components, matches them to known CVEs, scores the risk with three AI agents, and locks the report into a tamper-evident ledger.</p>
+  <a class="btn" href="#scan">Scan firmware</a><button class="btn o" id="demoTop">Run demo scan</button>
+</div>
+
+<section id="scan">
+  <h2>Firmware scanner</h2>
+  <p class="sub">Your file never leaves the browser. Only authorized firmware, please.</p>
+  <div class="drop" id="drop">
+    <p>Drag a firmware file here (.bin, .img, .fw, .zip) or</p>
+    <label class="btn o" for="file" style="cursor:pointer">Choose file</label>
+    <input type="file" id="file"><div class="fname" id="fname">No file selected</div>
+    <label class="chk"><input type="checkbox" id="live" checked> Look up CVEs live on NVD (falls back to offline data)</label>
+  </div>
+  <button class="btn" id="go" disabled style="margin-top:14px">Start assessment</button>
+  <button class="btn o" id="demo">Use demo router firmware</button>
+  <div class="bar"><i id="prog"></i></div>
+  <div class="term" id="term" role="log" aria-live="polite">$ waiting for firmware…</div>
+</section>
+
+<section id="results">
+  <h2>Assessment report</h2>
+  <p class="sub" id="meta"></p>
+  <div class="card row">
+    <div class="gauge" id="gauge"><div><span id="gv">0</span><small id="gc">risk</small></div></div>
+    <div><b>Firmware SHA-256</b><div class="hash" id="fh"></div>
+      <b>Score formula</b>
+      <p class="sub" style="margin:4px 0 0;font-family:var(--mono);font-size:13px">R = 0.35·Severity + 0.25·Exploitability + 0.25·Impact + 0.15·Exposure<br>Example weights for this prototype, not an official standard. Overall score = highest finding.</p></div>
+  </div>
+  <div class="tabs" role="tablist" style="margin-top:22px">
+    <button class="a" data-t="p1">Components</button><button data-t="p2">Vulnerabilities</button><button data-t="p3">AI agents</button>
+  </div>
+  <div class="pane a card" id="p1"><table id="tc"></table></div>
+  <div class="pane card" id="p2"><table id="tv"></table></div>
+  <div class="pane" id="p3"><div class="grid" id="agents"></div></div>
+</section>
+
+<section id="ledger">
+  <h2>Integrity ledger</h2>
+  <p class="sub">A local hash-chained ledger (each block holds the previous block's hash). It simulates the blockchain layer; the same idea moves to a Solidity contract later.</p>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div><b>Report (editable – change one character and verify)</b><textarea id="rep" spellcheck="false"></textarea>
+      <button class="btn" id="vr">Verify report</button><button class="btn o" id="tamper">Tamper with report</button><button class="btn o" id="vc">Verify chain</button>
+      <div id="verdict"></div></div>
+    <div><b>Blocks</b><div id="chain" style="margin-top:8px;max-height:330px;overflow:auto"></div>
+      <button class="btn o" id="clr">Clear ledger</button></div>
+  </div>
+</section>
+
+<section id="about">
+  <h2>How FRIS works</h2><p class="sub">Eight stages, from upload to verified report.</p>
+  <div class="grid">
+    <div class="card"><h3>Hash and extract</h3><p>SHA-256 of the file, then a scan of readable strings for component names and versions.</p></div>
+    <div class="card"><h3>Match CVEs</h3><p>Components are checked against NVD records, with an offline set for demos.</p></div>
+    <div class="card"><h3>Three agents</h3><p>Threat intelligence, patch verification and risk analysis each produce their own evidence-based summary.</p></div>
+    <div class="card"><h3>Score and anchor</h3><p>A documented formula sets the risk score, then the report hash is chained into the ledger.</p></div>
+  </div>
+  <p class="sub" style="margin-top:22px">FRIS finds known issues in components it can identify. It cannot prove firmware is safe or find unknown vulnerabilities.</p>
+</section>
+<footer>FRIS – Firmware Risk Intelligence System · student prototype</footer>
+
+<script>
+const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// ---------- background ----------
+(()=>{const c=$('#bg'),x=c.getContext('2d');let w,h,cols,y;
+const init=()=>{w=c.width=innerWidth;h=c.height=innerHeight;cols=Math.floor(w/18);y=Array.from({length:cols},()=>Math.random()*h)};init();addEventListener('resize',init);
+if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+setInterval(()=>{x.fillStyle='rgba(6,10,18,.12)';x.fillRect(0,0,w,h);x.fillStyle='#22d3ee';x.font='14px monospace';
+y.forEach((v,i)=>{x.fillText(Math.random()<.5?'0':'1',i*18,v);y[i]=v>h+Math.random()*9000?0:v+18})},90)})();
+// ---------- helpers ----------
+const sha=async b=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',b))].map(n=>n.toString(16).padStart(2,'0')).join('');
+const shaT=t=>sha(new TextEncoder().encode(t));
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const term=$('#term');
+const log=(t,c='')=>{term.insertAdjacentHTML('beforeend',`<div class="${c}">${esc(t)}</div>`);term.scrollTop=1e9};
+const step=p=>$('#prog').style.width=p+'%';
+// ---------- knowledge ----------
+const PATTERNS=[['busybox',/BusyBox v(\d+\.\d+(?:\.\d+)?)/i],['openssl',/OpenSSL (\d\.\d\.\d[a-z]?)/],['dropbear',/dropbear[_ -]?(?:sshd)?[ _-]?v?(\d{4}\.\d+)/i],
+['dnsmasq',/dnsmasq-(\d\.\d+)/i],['lighttpd',/lighttpd\/(\d\.\d+\.\d+)/],['linux kernel',/Linux version (\d+\.\d+\.\d+)/],['curl',/curl\/(\d+\.\d+\.\d+)/],['zlib',/zlib[ -](\d\.\d+\.\d+)/i]];
+const NET=new Set(['openssl','dropbear','dnsmasq','lighttpd','curl']);
+const OFFLINE=[
+{c:'openssl',m:v=>/^1\.0\.1[a-f]?$/.test(v),id:'CVE-2014-0160',cvss:7.5,kev:true,fix:'1.0.1g',d:'Heartbleed: TLS heartbeat out-of-bounds read can leak process memory, including keys.'},
+{c:'dnsmasq',m:v=>parseFloat(v)<2.78,id:'CVE-2017-14491',cvss:9.8,kev:false,fix:'2.78',d:'DNS response handling heap overflow allows remote code execution.'},
+{c:'busybox',m:v=>/^1\.(\d|1\d|2[0-4])\./.test(v),id:'CVE-2016-2147',cvss:7.5,kev:false,fix:'1.25.0',d:'DHCP client integer overflow in domain-name handling can crash or corrupt memory.'}];
+const DEMO='ELF..squashfs..BusyBox v1.19.4 (2013-02-10)..OpenSSL 1.0.1f 6 Jan 2014..dnsmasq-2.76..lighttpd/1.4.35..dropbear_2019.78..Linux version 3.10.14 (build@router)..zlib 1.2.8';
+const cls=r=>r>=80?'Critical':r>=60?'High':r>=30?'Medium':'Low';
+let file=null,demo=false,REPORT=null;
+// ---------- file input ----------
+const setFile=(f,d)=>{file=f;demo=d;$('#fname').textContent=d?'demo-router-fw-v1.bin (built-in sample)':f.name+' · '+(f.size/1024).toFixed(1)+' KB';$('#go').disabled=false};
+$('#file').onchange=e=>e.target.files[0]&&setFile(e.target.files[0],false);
+const dz=$('#drop');
+['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('on')}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('on')}));
+dz.addEventListener('drop',e=>e.dataTransfer.files[0]&&setFile(e.dataTransfer.files[0],false));
+const runDemo=()=>{setFile(new Blob([DEMO]),true);location.hash='#scan';setTimeout(scan,300)};
+$('#demo').onclick=runDemo;$('#demoTop').onclick=runDemo;$('#go').onclick=scan;
+// ---------- scan pipeline ----------
+async function scan(){
+ if(!file)return;$('#go').disabled=true;term.innerHTML='';step(5);
+ log('$ fris scan --input '+(demo?'demo-router-fw-v1.bin':file.name),'c');
+ if(file.size>64*1024*1024){log('File too large for browser scan (max 64 MB).','e');$('#go').disabled=false;return}
+ const buf=await file.arrayBuffer();await sleep(400);
+ log('[1/6] Hashing firmware (SHA-256)…');const fh=await sha(buf);log('      '+fh);step(20);await sleep(400);
+ log('[2/6] Extracting readable strings…');const txt=new TextDecoder('latin1').decode(buf);step(35);await sleep(400);
+ const comps=[];PATTERNS.forEach(([n,re])=>{const m=txt.match(re);if(m)comps.push({name:n,ver:m[1]})});
+ log(`[3/6] Identified ${comps.length} component(s)`+(comps.length?'':' – unsupported or packed firmware; try extracting it with binwalk first'),comps.length?'':'w');step(50);await sleep(400);
+ log('[4/6] Matching vulnerabilities…');const finds=[];let live=$('#live').checked&&!demo;
+ for(const c of comps.slice(0,6)){
+  let got=[];
+  if(live){try{got=await nvd(c);if(got.length)log(`      NVD live: ${c.name} ${c.ver} → ${got.length} match(es)`)}catch(e){log('      NVD unavailable, switching to offline data','w');live=false}}
+  OFFLINE.filter(o=>o.c===c.name&&o.m(c.ver)).forEach(o=>{if(!got.some(g=>g.id===o.id))got.push({...o,src:'offline demo data'})});
+  got.forEach(g=>finds.push({comp:c.name,ver:c.ver,...g}));
+ }
+ step(70);log(`      ${finds.length} possible match(es) – review required`,finds.length?'w':'');await sleep(400);
+ log('[5/6] Running AI agents + risk scoring…');
+ finds.forEach(f=>{const S=f.cvss*10,E=f.kev?95:60,I=S,X=NET.has(f.comp)?80:40;f.f={S,E,I,X};f.r=Math.round(.35*S+.25*E+.25*I+.15*X);f.cl=cls(f.r)});
+ const overall=finds.length?Math.max(...finds.map(f=>f.r)):0;step(85);await sleep(500);
+ log('[6/6] Anchoring report on ledger…');
+ REPORT={assessmentId:'FRIS-'+Date.now().toString(36).toUpperCase(),time:new Date().toISOString(),file:demo?'demo-router-fw-v1.bin':file.name,firmwareSha256:fh,components:comps,findings:finds.map(({m,...r})=>r),overallRisk:overall,classification:cls(overall)};
+ const txt2=JSON.stringify(REPORT,null,2);$('#rep').value=txt2;await addBlock(REPORT.assessmentId,fh,await shaT(txt2));
+ step(100);log('Done. Scroll down for the report.','c');render();$('#go').disabled=false;
+}
+async function nvd(c){
+ const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),7000);
+ const r=await fetch('https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=20&keywordSearch='+encodeURIComponent(c.name+' '+c.ver),{signal:ctl.signal});clearTimeout(t);
+ if(!r.ok)throw 0;const j=await r.json();
+ return (j.vulnerabilities||[]).map(v=>v.cve).filter(v=>(v.descriptions[0]?.value||'').includes(c.ver)).slice(0,2).map(v=>{
+  const m=v.metrics?.cvssMetricV31?.[0]||v.metrics?.cvssMetricV30?.[0]||v.metrics?.cvssMetricV2?.[0];
+  return{id:v.id,cvss:m?.cvssData.baseScore??5,kev:!!v.cisaExploitAdd,fix:'see vendor advisory',d:v.descriptions[0].value.slice(0,220),src:'NVD live'}});
+}
+// ---------- render ----------
+function render(){
+ const R=REPORT;$('#results').style.display='block';$('#meta').textContent=R.assessmentId+' · '+new Date(R.time).toLocaleString();$('#fh').textContent=R.firmwareSha256;
+ const g=$('#gauge');g.style.setProperty('--v',R.overallRisk);g.style.setProperty('--gc',{Low:'#4ade80',Medium:'#fbbf24',High:'#fb923c',Critical:'#f87171'}[R.classification]);
+ $('#gv').textContent=R.overallRisk;$('#gc').textContent=R.classification;
+ $('#tc').innerHTML='<tr><th>Component</th><th>Version</th><th>Network-facing</th></tr>'+(R.components.map(c=>`<tr><td class="m">${esc(c.name)}</td><td class="m">${esc(c.ver)}</td><td>${NET.has(c.name)?'Likely':'Unknown'}</td></tr>`).join('')||'<tr><td colspan=3>No components identified.</td></tr>');
+ $('#tv').innerHTML='<tr><th>CVE</th><th>Component</th><th>CVSS</th><th>FRIS risk</th><th>Details</th></tr>'+(R.findings.map(f=>`<tr><td class="m">${esc(f.id)}</td><td class="m">${esc(f.comp+' '+f.ver)}</td><td>${f.cvss}</td><td><span class="tag ${f.cl}">${f.r} ${f.cl}</span></td><td>${esc(f.d)}<br><small style="color:var(--mut)">Source: ${f.src}</small></td></tr>`).join('')||'<tr><td colspan=5>No known matches found. This does not prove the firmware is safe.</td></tr>');
+ const F=R.findings,top=[...F].sort((a,b)=>b.r-a.r)[0];
+ const A=[['Threat Intelligence Agent',F.length?F.map(f=>`${f.id} may affect ${f.comp} ${f.ver} (${f.src}).`).concat(F.some(f=>f.kev)?['At least one match is flagged as actively exploited – prioritise it.']:[]):['No matching vulnerability records for the identified components.']],
+ ['Patch Verification Agent',F.length?F.map(f=>`${f.comp}: upgrade to ${f.fix}. Status: needs manual verification (a newer version alone is not proof of a fix).`):['Nothing to verify. Upload an updated firmware to compare versions.']],
+ ['Firmware Risk Analysis Agent',top?[`Highest risk: ${top.id} in ${top.comp} (score ${top.r}).`,NET.has(top.comp)?`${top.comp} is usually network-facing, so exposure is rated high. Confirm the service is enabled and reachable.`:`${top.comp} is usually not directly exposed; check how it is used.`,'Validate in a lab before reporting this as a confirmed vulnerability.']:['No findings to analyse.']]];
+ $('#agents').innerHTML=A.map(a=>`<div class="card agent"><h3>${a[0]}</h3><ul>${a[1].map(l=>`<li>${esc(l)}</li>`).join('')}</ul></div>`).join('');
+ $('#results').scrollIntoView({behavior:'smooth'});
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button,.pane').forEach(e=>e.classList.remove('a'));b.classList.add('a');$('#'+b.dataset.t).classList.add('a')});
+// ---------- ledger ----------
+const KEY='fris-ledger';const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return[]}};const save=c=>{try{localStorage.setItem(KEY,JSON.stringify(c))}catch{}};
+const bh=b=>shaT(b.index+b.prev+b.id+b.fw+b.rep+b.ts);
+async function addBlock(id,fw,rep){const c=load(),b={index:c.length,prev:c.length?c[c.length-1].hash:'0'.repeat(64),id,fw,rep,ts:new Date().toISOString()};b.hash=await bh(b);c.push(b);save(c);drawChain(c)}
+function drawChain(c,bad=-1){$('#chain').innerHTML=c.map((b,i)=>`<div class="blk ${i===bad?'bad':''}"><b>Block ${b.index} · ${esc(b.id)}</b><br>report: ${b.rep.slice(0,24)}…<br>prev: ${b.prev.slice(0,16)}… hash: ${b.hash.slice(0,16)}…</div>`).join('')||'<div class="blk">Empty. Run a scan to create the first block.</div>'}
+const say=(t,ok)=>{const v=$('#verdict');v.textContent=t;v.style.color=ok?'var(--gr)':'var(--rd)'};
+$('#vr').onclick=async()=>{const c=load();if(!c.length)return say('No block yet. Run a scan first.',false);
+ const h=await shaT($('#rep').value),b=[...c].reverse().find(x=>x.rep===h);const last=c[c.length-1];
+ b?say('Hash matches: report is identical to block '+b.index+'.',true):say('Hash mismatch: report differs from every recorded version.',false)};
+$('#tamper').onclick=()=>{$('#rep').value=$('#rep').value.replace('"overallRisk"','"overallRisk" ')};
+$('#vc').onclick=async()=>{const c=load();for(let i=0;i<c.length;i++){if(await bh(c[i])!==c[i].hash||(i&&c[i].prev!==c[i-1].hash)){drawChain(c,i);return say('Chain broken at block '+i+'.',false)}}drawChain(c);say(c.length?'Chain valid: '+c.length+' block(s) linked.':'Ledger is empty.',true)};
+$('#clr').onclick=()=>{save([]);drawChain([]);say('',true)};
+drawChain(load());
+</script>
+</body>
+</html>
